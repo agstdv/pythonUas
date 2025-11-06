@@ -28,6 +28,37 @@ def remove_background(image_path):
         messagebox.showerror("Error", f"Gagal menghapus background: {e}")
         return None
 
+#tiyas
+# ------------------------------------------------------------
+# Fungsi untuk mengganti background dengan warna
+# ------------------------------------------------------------
+def change_background_color(image_path):
+    if not image_path:
+        messagebox.showwarning("Peringatan", "Pilih gambar terlebih dahulu.")
+        return None
+
+    try:
+        color_hex = colorchooser.askcolor(title="Pilih Warna Background")[1]
+        if not color_hex:
+            return
+
+        with open(image_path, "rb") as inp:
+            result = remove(inp.read())
+
+        image = Image.open(io.BytesIO(result)).convert("RGBA")
+
+        bg_color = ImageColor.getrgb(color_hex)
+        background = Image.new("RGBA", image.size, bg_color + (255,))
+        combined = Image.alpha_composite(background, image)
+
+        save_with_custom_name(combined.convert("RGB"), f"colored_bg_{os.path.basename(image_path)}")
+        messagebox.showinfo("Sukses", "Warna background berhasil diganti.")
+        return combined
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Gagal mengganti background: {e}")
+        return None
+
 
 # ------------------------------------------------------------
 # GUI utama
@@ -62,6 +93,13 @@ def start_app():
     )
     btn_remove.pack(pady=10)
 
+    btn_color = tk.Button(
+        root, text="Ganti Warna Background",
+        command=lambda: change_background_color(getattr(label_img, "path", None)),
+        width=25, bg="#ff9800", fg="white", font=("Segoe UI", 11)
+    )
+    btn_color.pack(pady=10)
+    
     root.mainloop()
 
 
