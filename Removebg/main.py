@@ -5,6 +5,22 @@ from tkinter import filedialog, messagebox, colorchooser
 # from PIL import Image, ImageTk, ImageColor
 from rembg import remove
 
+# ------------------------------------------------------------
+# Fungsi Simpan
+# ------------------------------------------------------------
+def save_with_custom_name(image, default_name="output.png"):
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".png",
+        filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg;*.jpeg")],
+        initialfile=default_name,
+        title="Simpan Gambar Sebagai"
+    )
+    if file_path:
+        image.save(file_path)
+        messagebox.showinfo("Sukses", f"Gambar disimpan di:\n{file_path}")
+        return file_path
+    else:
+        return None
 
 # ------------------------------------------------------------
 # Fungsi untuk menghapus background dan menyimpan hasil
