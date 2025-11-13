@@ -22,6 +22,7 @@ def save_with_custom_name(image, default_name="output.png"):
     else:
         return None
 
+# diva
 # ------------------------------------------------------------
 # Fungsi untuk menghapus background dan menyimpan hasil
 # ------------------------------------------------------------
@@ -29,6 +30,27 @@ def remove_background(image_path):
     with open(image_path, "rb") as inp:
         result = remove(inp.read())
     return Image.open(io.BytesIO(result)).convert("RGBA")
+
+# diva
+# ------------------------------------------------------------
+# Fungsi buka gambar
+# ------------------------------------------------------------
+def open_image():
+    global selected_path
+    file_path = filedialog.askopenfilename(filetypes=[("Gambar", "*.png *.jpg *.jpeg")])
+    if not file_path:
+        return
+
+    selected_path = file_path
+    img = Image.open(file_path)
+    img.thumbnail((400, 400))
+    img_display = ImageTk.PhotoImage(img)
+
+    input_label.config(image=img_display)
+    input_label.image = img_display
+    preview_label.config(image="")
+    save_button.config(state="disabled")
+
 
 #tiyas
 # ------------------------------------------------------------
@@ -106,20 +128,6 @@ input_label.grid(row=2, column=0, pady=10)
 # Tombol operasi
 btn_frame = tk.Frame(scrollable_frame, bg="#121212")
 btn_frame.grid(row=3, column=0, pady=10)
-
-tk.Button(
-    btn_frame, text="🧹 Hapus Background",
-    command=lambda: threaded_process(remove_background, selected_path),
-    bg="#4caf50", fg="white", font=("Segoe UI", 10, "bold"),
-    relief="flat", padx=10, pady=5, width=22
-).grid(row=0, column=0, padx=5, pady=5)
-
-tk.Button(
-    btn_frame, text="🎨 Ganti Warna Background",
-    command=lambda: threaded_process(change_background_color, selected_path),
-    bg="#ff9800", fg="white", font=("Segoe UI", 10, "bold"),
-    relief="flat", padx=10, pady=5, width=22
-).grid(row=1, column=0, padx=5, pady=5)
 
 # Preview hasil
 tk.Label(
