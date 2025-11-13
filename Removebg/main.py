@@ -2,7 +2,7 @@ import os
 import io
 import tkinter as tk
 from tkinter import filedialog, messagebox, colorchooser
-# from PIL import Image, ImageTk, ImageColor
+from PIL import Image, ImageTk, ImageColor
 from rembg import remove
 
 
@@ -10,23 +10,9 @@ from rembg import remove
 # Fungsi untuk menghapus background dan menyimpan hasil
 # ------------------------------------------------------------
 def remove_background(image_path):
-    if not image_path:
-        messagebox.showwarning("Peringatan", "Pilih gambar terlebih dahulu.")
-        return None
-
-    try:
-        with open(image_path, "rb") as inp:
-            result = remove(inp.read())
-
-        image = Image.open(io.BytesIO(result)).convert("RGBA")
-
-        save_with_custom_name(image, f"no_bg_{os.path.basename(image_path)}")
-        messagebox.showinfo("Sukses", "Background berhasil dihapus.")
-        return image
-
-    except Exception as e:
-        messagebox.showerror("Error", f"Gagal menghapus background: {e}")
-        return None
+    with open(image_path, "rb") as inp:
+        result = remove(inp.read())
+    return Image.open(io.BytesIO(result)).convert("RGBA")
 
 
 # ------------------------------------------------------------
