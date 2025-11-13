@@ -82,6 +82,20 @@ def change_background_color(image_path):
     except Exception as e:
         messagebox.showerror("Error", f"Gagal mengganti background: {e}")
         return None
+    
+def save_preview():
+    if preview_label.image:
+        image = preview_label.image
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".png",
+            filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg;*.jpeg")],
+            title="Simpan Gambar"
+        )
+        if file_path:
+            preview_img = preview_label.image
+            preview_img._PhotoImage__photo.write(file_path, format="png")
+            messagebox.showinfo("Sukses", "Gambar berhasil disimpan!")
+
 
 
 # ------------------------------------------------------------
