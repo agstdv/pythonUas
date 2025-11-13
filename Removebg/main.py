@@ -108,7 +108,37 @@ def save_preview():
             preview_img._PhotoImage__photo.write(file_path, format="png")
             messagebox.showinfo("Sukses", "Gambar berhasil disimpan!")
 
+def replace_background_with_image(self):
+        """
+        Menghapus background gambar utama, lalu menggantinya
+        dengan gambar background lain yang dipilih pengguna.
+        """
+        if not self.removed_image:
+            messagebox.showwarning("Peringatan", "Hapus background dulu sebelum ganti BG gambar!")
+            return
 
+        bg_path = filedialog.askopenfilename(
+            title="Pilih Gambar Background",
+            filetypes=[("Image files", "*.png;*.jpg;*.jpeg")]
+        )
+        if not bg_path:
+            return
+
+        try:
+            bg_image = Image.open(bg_path).convert("RGBA")
+            bg_image = bg_image.resize(self.removed_image.size)
+
+            combined = Image.new("RGBA", self.removed_image.size)
+            combined.paste(bg_image, (0, 0))
+            combined.paste(self.removed_image, (0, 0), self.removed_image)
+
+            self.display_image(combined)
+            self.removed_image = combined
+
+            messagebox.showinfo("Sukses", "Background berhasil diganti dengan gambar lain!")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Gagal mengganti background: {e}")
 
 # ------------------------------------------------------------
 # GUI
