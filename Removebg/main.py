@@ -93,7 +93,7 @@ class RemoveBGApp:
         credit.pack(side="bottom", pady=5)
 
     # ------------------------------------------------------------
-    #  Fungsi untuk mengganti background dengan warna
+    #  Fungsi untuk mengganti background dengan warnaa
     #  Tiyas
     # ------------------------------------------------------------
     def change_bg_color(self):
