@@ -57,6 +57,18 @@ def open_image():
 # Fungsi untuk mengganti background dengan warna
 # ------------------------------------------------------------
 def change_background_color(image_path):
+    color_hex = colorchooser.askcolor(title="Pilih Warna Background")[1]
+    if not color_hex:
+        return None
+
+    with open(image_path, "rb") as inp:
+        result = remove(inp.read())
+
+    image = Image.open(io.BytesIO(result)).convert("RGBA")
+    bg_color = ImageColor.getrgb(color_hex)
+    background = Image.new("RGBA", image.size, bg_color + (255,))
+    return Image.alpha_composite(background, image)
+
     if not image_path:
         messagebox.showwarning("Peringatan", "Pilih gambar terlebih dahulu.")
         return None
