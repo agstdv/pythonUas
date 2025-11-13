@@ -1,183 +1,164 @@
-import os
-import io
 import tkinter as tk
 from tkinter import filedialog, messagebox, colorchooser
-from PIL import Image, ImageTk, ImageColor
 from rembg import remove
-
-# ------------------------------------------------------------
-# Fungsi Simpan
-# ------------------------------------------------------------
-def save_with_custom_name(image, default_name="output.png"):
-    file_path = filedialog.asksaveasfilename(
-        defaultextension=".png",
-        filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg;*.jpeg")],
-        initialfile=default_name,
-        title="Simpan Gambar Sebagai"
-    )
-    if file_path:
-        image.save(file_path)
-        messagebox.showinfo("Sukses", f"Gambar disimpan di:\n{file_path}")
-        return file_path
-    else:
-        return None
-
-# diva
-# ------------------------------------------------------------
-# Fungsi untuk menghapus background dan menyimpan hasil
-# ------------------------------------------------------------
-def remove_background(image_path):
-    with open(image_path, "rb") as inp:
-        result = remove(inp.read())
-    return Image.open(io.BytesIO(result)).convert("RGBA")
-
-# diva
-# ------------------------------------------------------------
-# Fungsi buka gambar
-# ------------------------------------------------------------
-def open_image():
-    global selected_path
-    file_path = filedialog.askopenfilename(filetypes=[("Gambar", "*.png *.jpg *.jpeg")])
-    if not file_path:
-        return
-
-    selected_path = file_path
-    img = Image.open(file_path)
-    img.thumbnail((400, 400))
-    img_display = ImageTk.PhotoImage(img)
-
-    input_label.config(image=img_display)
-    input_label.image = img_display
-    preview_label.config(image="")
-    save_button.config(state="disabled")
+from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+import os
+import io
+import webbrowser
+import numpy as np
+from scipy.ndimage import gaussian_laplace, gaussian_filter
+import threading
+import sys
+from about_window import show_about_window  # ✅ import About terpisah
 
 
-#tiyas
-# ------------------------------------------------------------
-# Fungsi untuk mengganti background dengan warna
-# ------------------------------------------------------------
-def change_background_color(image_path):
-    color_hex = colorchooser.askcolor(title="Pilih Warna Background")[1]
-    if not color_hex:
-        return None
+class RemoveBGApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("🧹 Remove Background App")
+        self.root.geometry("800x600")
+        self.root.resizable(True, True)
 
-    with open(image_path, "rb") as inp:
-        result = remove(inp.read())
+        # === Background Gradient ===
+        self.gradient_bg()
 
-    image = Image.open(io.BytesIO(result)).convert("RGBA")
-    bg_color = ImageColor.getrgb(color_hex)
-    background = Image.new("RGBA", image.size, bg_color + (255,))
-    return Image.alpha_composite(background, image)
+        self.image_data = None
+        self.removed_image = None
 
-    if not image_path:
-        messagebox.showwarning("Peringatan", "Pilih gambar terlebih dahulu.")
-        return None
+        # === FRAME UTAMA ===
+        main_frame = tk.Frame(root, bg="#000000", relief="flat")
+        main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-    try:
-        color_hex = colorchooser.askcolor(title="Pilih Warna Background")[1]
-        if not color_hex:
+        # === LABEL JUDUL ===
+        title = tk.Label(
+            main_frame,
+            text="🧹 Remove Background App",
+            font=("Segoe UI", 20, "bold"),
+            bg="#e3f2fd",
+            fg="#0d47a1"
+        )
+        title.grid(row=0, column=0, columnspan=3, pady=20)
+
+        # === PREVIEW AREA ===
+        self.preview_label = tk.Label(
+            main_frame,
+            text="Preview Gambar",
+            width=80,
+            height=20,
+            bg="#fafafa",
+            fg="#616161",
+            relief="ridge"
+        )
+        self.preview_label.grid(row=1, column=0, columnspan=3, padx=10, pady=10)
+
+        # === TEXT LOADING ===
+        self.loading_text = tk.Label(
+            self.preview_label,
+            text="⏳ Sedang menghapus background, tunggu sebentar…",
+            bg="#fafafa",
+            fg="black",
+            font=("Segoe UI", 12, "italic")
+        )
+        self.loading_text.place_forget()
+
+
+        tk.Button(
+            main_frame, text="🎨 Ganti Warna BG", command=self.change_bg_color,
+            bg="#7e57c2", fg="white", font=("Segoe UI", 10, "bold"),
+            width=20, relief="flat"
+        ).grid(row=3, column=0, padx=10, pady=5)
+
+        # ✅ Tombol baru: fungsi Aan
+        tk.Button(
+            main_frame, text="🖼️ Ganti BG Gambar", command=self.replace_background_with_image,
+            bg="#26a69a", fg="white", font=("Segoe UI", 10, "bold"),
+            width=20, relief="flat"
+        ).grid(row=3, column=1, padx=10, pady=5)
+
+        # ✅ Tentang / README
+        tk.Button(
+            main_frame, text="📘 Tentang / README", command=lambda: show_about_window(self.root),
+            bg="#8d6e63", fg="white", font=("Segoe UI", 10, "bold"),
+            width=20, relief="flat"
+        ).grid(row=3, column=2, padx=10, pady=5)
+
+        # === CREDIT BAWAH ===
+        credit = tk.Label(
+            root,
+            text="© 2025 - Tim RemoveBG Project",
+            font=("Segoe UI", 9),
+            bg="#e3f2fd",
+            fg="#0d47a1"
+        )
+        credit.pack(side="bottom", pady=5)
+
+    # ------------------------------------------------------------
+    #  Fungsi untuk mengganti background dengan warna
+    #  Tiyas
+    # ------------------------------------------------------------
+    def change_bg_color(self):
+        if not self.removed_image:
+            messagebox.showwarning("Peringatan", "Hapus background dulu!")
+            return
+        color = colorchooser.askcolor(title="Pilih Warna Background")[1]
+        if color:
+            new_img = Image.new("RGBA", self.removed_image.size, color)
+            new_img.paste(self.removed_image, (0, 0), self.removed_image)
+            self.display_image(new_img)
+            self.removed_image = new_img
+
+    # ------------------------------------------------------------
+    #  Fungsi untuk mengganti background dengan gambar lain
+    #  Aan
+    # ------------------------------------------------------------
+    def replace_background_with_image(self):
+        """
+        Menghapus background gambar utama, lalu menggantinya
+        dengan gambar background lain yang dipilih pengguna.
+        """
+        if not self.removed_image:
+            messagebox.showwarning("Peringatan", "Hapus background dulu sebelum ganti BG gambar!")
             return
 
-        with open(image_path, "rb") as inp:
-            result = remove(inp.read())
-
-        image = Image.open(io.BytesIO(result)).convert("RGBA")
-
-        bg_color = ImageColor.getrgb(color_hex)
-        background = Image.new("RGBA", image.size, bg_color + (255,))
-        combined = Image.alpha_composite(background, image)
-
-        save_with_custom_name(combined.convert("RGB"), f"colored_bg_{os.path.basename(image_path)}")
-        messagebox.showinfo("Sukses", "Warna background berhasil diganti.")
-        return combined
-
-    except Exception as e:
-        messagebox.showerror("Error", f"Gagal mengganti background: {e}")
-        return None
-    
-def save_preview():
-    if preview_label.image:
-        image = preview_label.image
-        file_path = filedialog.asksaveasfilename(
-            defaultextension=".png",
-            filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg;*.jpeg")],
-            title="Simpan Gambar"
+        bg_path = filedialog.askopenfilename(
+            title="Pilih Gambar Background",
+            filetypes=[("Image files", "*.png;*.jpg;*.jpeg")]
         )
-        if file_path:
-            preview_img = preview_label.image
-            preview_img._PhotoImage__photo.write(file_path, format="png")
-            messagebox.showinfo("Sukses", "Gambar berhasil disimpan!")
+        if not bg_path:
+            return
+
+        try:
+            bg_image = Image.open(bg_path).convert("RGBA")
+            bg_image = bg_image.resize(self.removed_image.size)
+
+            combined = Image.new("RGBA", self.removed_image.size)
+            combined.paste(bg_image, (0, 0))
+            combined.paste(self.removed_image, (0, 0), self.removed_image)
+
+            self.display_image(combined)
+            self.removed_image = combined
+
+            messagebox.showinfo("Sukses", "Background berhasil diganti dengan gambar lain!")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Gagal mengganti background: {e}")
+
+    def display_image(self, img):
+        max_width, max_height = 700, 500
+        w, h = img.size
+
+        if w > max_width or h > max_height:
+            ratio = min(max_width / w, max_height / h)
+            new_size = (int(w * ratio), int(h * ratio))
+            img = img.resize(new_size, Image.LANCZOS)
+
+        img_tk = ImageTk.PhotoImage(img)
+        self.preview_label.configure(image=img_tk, text="")
+        self.preview_label.image = img_tk
+        self.preview_label.config(width=img.width, height=img.height)
 
 
-
-# ------------------------------------------------------------
-# GUI
-# ------------------------------------------------------------
-root = tk.Tk()
-root.title("Remove Background App")
-root.geometry("600x800")
-root.configure(bg="#121212")
-
-# Scrollable canvas
-canvas = tk.Canvas(root, bg="#121212", highlightthickness=0)
-scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
-scrollable_frame = tk.Frame(canvas, bg="#121212")
-
-scrollable_frame.bind(
-    "<Configure>",
-    lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-)
-
-canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
-canvas.configure(yscrollcommand=scrollbar.set)
-
-canvas.pack(side="left", fill="both", expand=True)
-scrollbar.pack(side="right", fill="y")
-
-# Judul
-tk.Label(
-    scrollable_frame, text="✨ Remove Background App ✨",
-    bg="#121212", fg="white", font=("Segoe UI", 20, "bold")
-).grid(row=0, column=0, pady=20, sticky="n")
-
-# Tombol pilih gambar
-tk.Button(
-    scrollable_frame, text="📂 Pilih Gambar",
-    command=open_image, bg="#2196f3", fg="white",
-    font=("Segoe UI", 11, "bold"), relief="flat", padx=15, pady=5
-).grid(row=1, column=0, pady=10)
-
-# Input preview
-input_label = tk.Label(scrollable_frame, bg="#1e1e1e")
-input_label.grid(row=2, column=0, pady=10)
-
-# Tombol operasi
-btn_frame = tk.Frame(scrollable_frame, bg="#121212")
-btn_frame.grid(row=3, column=0, pady=10)
-
-# Preview hasil
-tk.Label(
-    scrollable_frame, text="📷 Preview Hasil:",
-    bg="#121212", fg="#aaaaaa", font=("Segoe UI", 12, "bold")
-).grid(row=4, column=0, pady=(20, 10))
-
-preview_label = tk.Label(scrollable_frame, bg="#1e1e1e")
-preview_label.grid(row=5, column=0, pady=10)
-
-# Tombol simpan
-save_button = tk.Button(
-    scrollable_frame, text="💾 Simpan Gambar",
-    command=save_with_custom_name,
-    bg="#00bcd4", fg="white", font=("Segoe UI", 11, "bold"),
-    relief="flat", padx=15, pady=5, state="disabled"
-)
-save_button.grid(row=6, column=0, pady=15)
-
-# Label loading
-loading_label = tk.Label(
-    scrollable_frame, text="⏳ Memproses...",
-    bg="#121212", fg="white", font=("Segoe UI", 14, "italic")
-)
-loading_label.place_forget()
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = RemoveBGApp(root)
+    root.mainloop()
