@@ -61,6 +61,13 @@ class RemoveBGApp:
         )
         self.loading_text.place_forget()
 
+
+        tk.Button(
+            main_frame, text="🎨 Ganti Warna BG", command=self.change_bg_color,
+            bg="#7e57c2", fg="white", font=("Segoe UI", 10, "bold"),
+            width=20, relief="flat"
+        ).grid(row=3, column=0, padx=10, pady=5)
+
         # ✅ Tombol baru: fungsi Aan
         tk.Button(
             main_frame, text="🖼️ Ganti BG Gambar", command=self.replace_background_with_image,
@@ -86,6 +93,16 @@ class RemoveBGApp:
         credit.pack(side="bottom", pady=5)
 
     # ------------------------------------------------------------
+    def change_bg_color(self):
+        if not self.removed_image:
+            messagebox.showwarning("Peringatan", "Hapus background dulu!")
+            return
+        color = colorchooser.askcolor(title="Pilih Warna Background")[1]
+        if color:
+            new_img = Image.new("RGBA", self.removed_image.size, color)
+            new_img.paste(self.removed_image, (0, 0), self.removed_image)
+            self.display_image(new_img)
+            self.removed_image = new_img
     #  Fungsi untuk mengganti background dengan gambar lain
     #  Aan
     # ------------------------------------------------------------
@@ -121,12 +138,7 @@ class RemoveBGApp:
         except Exception as e:
             messagebox.showerror("Error", f"Gagal mengganti background: {e}")
 
-
-
     def display_image(self, img):
-        """
-        display_image(img)
-        """
         max_width, max_height = 700, 500
         w, h = img.size
 
