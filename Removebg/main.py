@@ -129,38 +129,6 @@ input_label.grid(row=2, column=0, pady=10)
 btn_frame = tk.Frame(scrollable_frame, bg="#121212")
 btn_frame.grid(row=3, column=0, pady=10)
 
-tk.Button(
-    btn_frame, text="🧹 Hapus Background",
-    command=lambda: threaded_process(remove_background, selected_path),
-    bg="#4caf50", fg="white", font=("Segoe UI", 10, "bold"),
-    relief="flat", padx=10, pady=5, width=22
-).grid(row=0, column=0, padx=5, pady=5)
-
-tk.Button(
-    btn_frame, text="🎨 Ganti Warna Background",
-    command=lambda: threaded_process(change_background_color, selected_path),
-    bg="#ff9800", fg="white", font=("Segoe UI", 10, "bold"),
-    relief="flat", padx=10, pady=5, width=22
-).grid(row=1, column=0, padx=5, pady=5)
-
-tk.Button(
-    btn_frame, text="🖼️ Ganti Background Gambar",
-    command=lambda: threaded_process(replace_background_with_image, selected_path),
-    bg="#9c27b0", fg="white", font=("Segoe UI", 10, "bold"),
-    relief="flat", padx=10, pady=5, width=22
-).grid(row=2, column=0, padx=5, pady=5)
-
-btn_about = tk.Button(
-    scrollable_frame,  # atau root kalau kamu belum pakai scroll
-    text="ℹ️ Tentang Aplikasi",
-    command=show_about,
-    bg="#3a3a3a", fg="white",
-    activebackground="#555", activeforeground="white",
-    font=("Segoe UI", 10, "bold"),
-    relief="flat", width=25
-)
-btn_about.grid(row=7, column=0, pady=10)
-
 # Preview hasil
 tk.Label(
     scrollable_frame, text="📷 Preview Hasil:",
